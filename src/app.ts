@@ -1,4 +1,4 @@
-import { AbstractMesh, Animation, AnimationGroup, ArcRotateCamera, Color3, CubeTexture, Engine, MeshBuilder, MotionBlurPostProcess, PointLight, Scene, SineEase, StandardMaterial, Texture, Vector3, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
+import { AbstractMesh, Animation, AnimationGroup, ArcRotateCamera, Axis, Color3, CubeTexture, Engine, Mesh, MeshBuilder, MotionBlurPostProcess, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, UniversalCamera, Vector3, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
 const BLOCKDIST = 1.1;
 
 class App {
@@ -20,6 +20,7 @@ class App {
 
         /* Camera Config */
         // const camera = new UniversalCamera("testcam", Vector3.Zero(), scene);
+        // camera.attachControl(scene, true)
         const camera = new ArcRotateCamera("introcam", 0, Math.PI/3, 10, Vector3.Zero(), scene);
         camera.inputs.clear();
         camera.useAutoRotationBehavior = true
@@ -79,10 +80,6 @@ class App {
             box.material = cubeMaterial
         }
 
-        // performMove("L", true, scene)
-
-        scene.freezeActiveMeshes();
-
         // hide/show the Inspector
         window.addEventListener("keydown", ev => {
             if (ev.shiftKey && ev.ctrlKey && ev.altKey && ev.key === 'i') // Shift+Ctrl+Alt+I
@@ -90,35 +87,61 @@ class App {
         });
         window.addEventListener("resize", () => engine.resize());
         engine.runRenderLoop(() => {if (scene?.activeCamera) scene.render()});
+
+        (async () => { // FIXME: Lighting is broken after cubes move
+            scene.unfreezeActiveMeshes()
+            for (let i = 0; i < 100; i++) await performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
+            scene.freezeActiveMeshes()
+        })();
     }
 }
-// enum Moves {"L" = "0xx", "R" = "2xx", "U" = "x2x", "D" = "x0x"}
-// const rotateAnimCache: {[key: string]: Animation} = {}
-// function performMove(move: keyof typeof Moves, isClockwise: boolean, scene: Scene) {
-//     const meshes: AbstractMesh[] = []
-//     for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
-//         const mesh = scene.getMeshByName(Moves[move].replace("x", a.toString()).replace("x", b.toString()));
-//         if (mesh) meshes.push(mesh)
-//     }
-//     const animGroup = new AnimationGroup(move+isClockwise?"t":"f", scene)
-//     for (const mesh of meshes) {
-//         const animID = mesh.name+isClockwise?"t":"f";
-//         if (!(animID in rotateAnimCache)) {
-//             rotateAnimCache[animID] = new Animation(animID, "position", 5, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
-//             const animKeys = []
-//             const step = Math.PI/200
-//             for (let frame = 0; frame * step < Math.PI/2; frame+=5) animKeys.push({
-//                 frame: frame, value: new Vector3().scale(BLOCKDIST)
-//             })
-//             rotateAnimCache[animID].setKeys()
-//         }
-//         animGroup.addTargetedAnimation(rotateAnimCache[animID], mesh)
-//     }
-//     animGroup.play()
-//     animGroup.onAnimationGroupEndObservable.add((animGroup) => {
-//         for (const tAnim of animGroup.children) {
-//             tAnim.target.name = t
-//         }
-//     })
-// }
+const moves = {"L": "0xx", "R": "2xx", "U": "x2x", "D": "x0x", "F": "xx0", "B": "xx2"}
+const animCache: {[key: string]: {rotation: Animation, position: Animation}} = {}
+const ROTSTEP = Math.PI/32;
+function performMove(move: keyof typeof moves, isClockwise: boolean, scene: Scene): Promise<void> {
+    const meshes: AbstractMesh[] = []
+    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
+        const mesh = scene.getMeshByName(moves[move].replace("x", a.toString()).replace("x", b.toString()));
+        if (mesh) meshes.push(mesh)
+    }
+    const moveID = move+(isClockwise?"":"'")
+    const animGroup = new AnimationGroup(moveID, scene)
+    const pivotStr = moves[move].replaceAll("x", "1")
+    const pivot = new Vector3(parseInt(pivotStr[0])-1, parseInt(pivotStr[1])-1, parseInt(pivotStr[2])-1)
+    const axis = (move === "L" || move === "R" ? Axis.X : (move === "U" || move === "D" ? Axis.Y : (Axis.Z))).normalize()
+    for (const mesh of meshes) {
+        const animID: string = mesh.name+moveID;
+        if (!(animID in animCache)) {
+            animCache[animID] = {
+                position: new Animation(animID, "position", 8, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, false),
+                rotation: new Animation(animID, "rotationQuaternion", 8, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
+            };
+            const posKeys = []
+            const rotKeys = []
+            let rq = Quaternion.RotationYawPitchRoll(mesh.rotation.y, mesh.rotation.x, mesh.rotation.z);
+            for (let frame = 0; frame * ROTSTEP <= Math.PI/2; frame+=8) {
+                const angle = (isClockwise ? 1 : -1) * frame * ROTSTEP;
+                var _p = new Quaternion(mesh.position.x - pivot.x, mesh.position.y - pivot.y, mesh.position.z - pivot.z, 0);
+                var _q = Quaternion.RotationAxis(axis, angle);	
+                var _pdash = _q.multiply(_p).multiply(_q.invert());
+                posKeys.push({frame, value: new Vector3(pivot.x + _pdash.x, pivot.y + _pdash.y, pivot.z + _pdash.z)})
+                rotKeys.push({frame, value: rq.multiply(_q)})
+            }
+            animCache[animID].position.setKeys(posKeys)
+            animCache[animID].rotation.setKeys(rotKeys)
+        }
+        animGroup.addTargetedAnimation(animCache[animID].position, mesh)
+        animGroup.addTargetedAnimation(animCache[animID].rotation, mesh)
+    }
+    animGroup.play()
+    return new Promise<AnimationGroup>((resolve, reject) => animGroup.onAnimationGroupEndObservable.add((animGroup, _) => resolve(animGroup))).then((animGroup) => {
+        for (const tAnim of animGroup.children) {
+            const mesh: Mesh = tAnim.target;
+            const scalePos = mesh.position.scale(1/BLOCKDIST);
+            const roundPos = new Vector3(Math.round(scalePos.x), Math.round(scalePos.y), Math.round(scalePos.z))
+            mesh.position = roundPos.scale(BLOCKDIST); // snap to grid
+            mesh.name = ""+(roundPos.x+1)+(roundPos.y+1)+(roundPos.z+1)
+        }
+    }).then()
+}
 new App();
