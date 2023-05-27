@@ -1,0 +1,28 @@
+{
+  "name": "portfolio",
+  "version": "0.0.1",
+  "description": "Showcase for my work",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack",
+    "start": "start.sh",
+    "pystart": "python -m http.server 80 -d dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/MutantPiggieGolem1/Portfolio.git"
+  },
+  "author": "Pew",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/MutantPiggieGolem1/Portfolio/issues"
+  },
+  "homepage": "https://github.com/MutantPiggieGolem1/Portfolio#readme",
+  "devDependencies": {
+    "@babylonjs/core": "^6.5.0",
+    "@babylonjs/inspector": "^6.5.0",
+    "html-webpack-plugin": "^5.5.1",
+    "webpack-dev-server": "^4.15.0"
+  }
+}
