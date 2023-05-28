@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "start": "start.sh",
-    "pystart": "python -m http.server 80 -d dist"
+    "start": "webpack-dev-server"
   },
   "repository": {
     "type": "git",
@@ -22,7 +21,9 @@
   "devDependencies": {
     "@babylonjs/core": "^6.5.0",
     "@babylonjs/inspector": "^6.5.0",
+    "copy-webpack-plugin": "^11.0.0",
     "html-webpack-plugin": "^5.5.1",
+    "webpack-cli": "^5.1.1",
     "webpack-dev-server": "^4.15.0"
   }
 }
