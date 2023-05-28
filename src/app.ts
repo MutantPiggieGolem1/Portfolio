@@ -1,7 +1,7 @@
-import { AbstractMesh, Animation, AnimationGroup, ArcRotateCamera, Axis, Color3, CubeTexture, Database, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, MotionBlurPostProcess, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, UniversalCamera, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
+import { AbstractMesh, Animation, AnimationGroup, ArcRotateCamera, Axis, Color3, Color4, CubeTexture, Database, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, MotionBlurPostProcess, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, UniversalCamera, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
 const BLOCKDIST = 1.1;
 const moveMap = {"L": "0xx", "R": "2xx", "U": "x2x", "D": "x0x", "F": "xx0", "B": "xx2"}
-const ROTSTEP = Math.PI/32;
+const ROTSTEP = 1/32;
 
 class App {
     public isOnMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -16,8 +16,8 @@ class App {
         
         /* Camera Config */
         const camera = this.isOnMobile ?
-            new VRDeviceOrientationArcRotateCamera("introcam", 0, Math.PI/3, 10, Vector3.Zero(), scene) :
-            new ArcRotateCamera("introcam", 0, Math.PI/3, 10, Vector3.Zero(), scene);
+            new VRDeviceOrientationArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene) :
+            new ArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene);
         // camera.attachControl(scene, true)
         camera.inputs.clear();
         camera.useAutoRotationBehavior = true
@@ -30,9 +30,9 @@ class App {
         betaAnimEasing.setEasingMode(SineEase.EASINGMODE_EASEINOUT)
         camBetaAnim.setEasingFunction(betaAnimEasing)
         camBetaAnim.setKeys([
-            {frame: 0  , value: Math.PI/3},
-            {frame: 100, value: Math.PI*2/3},
-            {frame: 200, value: Math.PI/3},
+            {frame: 0  , value: Math.PI*2/3},
+            {frame: 100, value: Math.PI/3},
+            {frame: 200, value: Math.PI*2/3},
         ])
         camera.animations.push(camBetaAnim)
         scene.beginAnimation(camera, 0, 200, true);
@@ -57,14 +57,24 @@ class App {
         skyboxMaterial.reflectionTexture = new CubeTexture("textures/sky", scene, ["_nx.png", "_ny.png", "_nz.png", "_px.png", "_py.png", "_pz.png"]);
         skyboxMaterial.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
         skyboxMaterial.diffuseColor = skyboxMaterial.specularColor = Color3.Black();
+        skyboxMaterial.disableLighting = true
         skybox.material = skyboxMaterial;
         /* -- */
 
         /* Light Config */
-        const sun = new PointLight("sunLight", new Vector3(-2, 132.5, 500), scene)
-        sun.specular = new Color3(1, 87/255, 51/255);
-        // const godrays = new VolumetricLightScatteringPostProcess('godrays', 1.0, camera, MeshBuilder.CreateSphere("sun", {diameter: 50}, scene), 100, Texture.BILINEAR_SAMPLINGMODE, engine, true)
-        // godrays.mesh.position = sun.position; FIXME Godrays dont work
+        const sunLight = new PointLight("sunLight", new Vector3(-2, 132.5, 500), scene)
+        sunLight.specular = new Color3(1, 87/255, 51/255);
+        const sunMesh = MeshBuilder.CreateSphere("sun", {diameter: 45}, scene);
+        const sunMat = new StandardMaterial("sunMat", scene);
+        sunMat.emissiveColor = sunLight.specular;
+        sunMat.disableLighting = true
+        const sunMatInvis = new StandardMaterial("sunMatInvis", scene);
+        sunMatInvis.disableColorWrite = true;
+        sunMesh.material = sunMat;
+        sunMesh.setMaterialForRenderPass(camera.renderPassId, sunMatInvis);
+        sunMesh.position = sunLight.position;
+        const godrays = new VolumetricLightScatteringPostProcess('godrays', 1.0, camera, sunMesh, 100, Texture.BILINEAR_SAMPLINGMODE, engine, true)
+        godrays.decay = 0.97
         /* -- */
 
         const cubeMaterial = new StandardMaterial("cubemat", scene)
@@ -106,7 +116,7 @@ class App {
             if (mesh) meshes.push(mesh)
         }
         const moveID = move+(isClockwise?"":"'")
-        const animGroup = new AnimationGroup(moveID, scene)
+        let animGroup = new AnimationGroup(moveID, scene)
         const pivotStr = moveMap[move].replaceAll("x", "1")
         const pivot = new Vector3(parseInt(pivotStr[0])-1, parseInt(pivotStr[1])-1, parseInt(pivotStr[2])-1)
         const axis = (move === "L" || move === "R" ? Axis.X : (move === "U" || move === "D" ? Axis.Y : (Axis.Z))).normalize()
@@ -120,13 +130,13 @@ class App {
                 const posKeys = []
                 const rotKeys = []
                 let rq = Quaternion.RotationYawPitchRoll(mesh.rotation.y, mesh.rotation.x, mesh.rotation.z); // FIXME: Rotations assume cubes are normal to location
-                for (let frame = 0; frame * ROTSTEP <= Math.PI/2; frame+=8) {
-                    const angle = (isClockwise ? 1 : -1) * frame * ROTSTEP;
-                    var _p = new Quaternion(mesh.position.x - pivot.x, mesh.position.y - pivot.y, mesh.position.z - pivot.z, 0);
-                    var _q = Quaternion.RotationAxis(axis, angle);	
-                    var _pdash = _q.multiply(_p).multiply(_q.invert());
+                for (let frame = 0; frame <= 0.5/ROTSTEP; frame+=8) {
+                    const angle = (isClockwise ? 1 : -1) * frame * ROTSTEP * Math.PI;
+                    const p = new Quaternion(mesh.position.x - pivot.x, mesh.position.y - pivot.y, mesh.position.z - pivot.z, 0);
+                    const q = Quaternion.RotationAxis(axis, angle);	
+                    const _pdash = q.multiply(p).multiply(q.invert());
                     posKeys.push({frame, value: new Vector3(pivot.x + _pdash.x, pivot.y + _pdash.y, pivot.z + _pdash.z)})
-                    rotKeys.push({frame, value: rq.multiply(_q)})
+                    rotKeys.push({frame, value: rq.multiply(q)})
                 }
                 this.animCache[animID].position.setKeys(posKeys)
                 this.animCache[animID].rotation.setKeys(rotKeys)
@@ -134,6 +144,7 @@ class App {
             animGroup.addTargetedAnimation(this.animCache[animID].position, mesh)
             animGroup.addTargetedAnimation(this.animCache[animID].rotation, mesh)
         }
+        // animGroup = AnimationGroup.MakeAnimationAdditive(animGroup)
         animGroup.play()
         return new Promise<AnimationGroup>((resolve, _) => animGroup.onAnimationGroupEndObservable.add((animGroup, _) => resolve(animGroup))).then((animGroup) => {
             for (const tAnim of animGroup.children) {
