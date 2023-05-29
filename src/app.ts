@@ -1,4 +1,4 @@
-import { AbstractMesh, Animation, AnimationGroup, ArcRotateCamera, Axis, Color3, Color4, CubeTexture, Database, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, MotionBlurPostProcess, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, UniversalCamera, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
+import { AbstractMesh, Animation, AnimationEvent, AnimationGroup, ArcRotateCamera, Axis, Color3, CubeTexture, Database, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
 const BLOCKDIST = 1.1;
 const moveMap = {"L": "0xx", "R": "2xx", "U": "x2x", "D": "x0x", "F": "xx0", "B": "xx2"}
 const ROTSTEP = 1/32;
@@ -90,6 +90,7 @@ class App {
             ] as any[]}, scene).enableEdgesRendering()
             box.position = new Vector3(x-1, y-1, z-1).scale(BLOCKDIST)
             box.material = cubeMaterial
+            box.rotationQuaternion = Quaternion.Identity()
         }
 
         // hide/show the Inspector
@@ -120,23 +121,24 @@ class App {
         const pivotStr = moveMap[move].replaceAll("x", "1")
         const pivot = new Vector3(parseInt(pivotStr[0])-1, parseInt(pivotStr[1])-1, parseInt(pivotStr[2])-1)
         const axis = (move === "L" || move === "R" ? Axis.X : (move === "U" || move === "D" ? Axis.Y : (Axis.Z))).normalize()
-        for (const mesh of meshes) {
+        for (const mesh of meshes) { // FIXME: Animations snap to expected starting rotation
             const animID: string = mesh.name+moveID;
             if (!(animID in this.animCache)) {
                 this.animCache[animID] = {
-                    position: new Animation(animID, "position", 8, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, false),
-                    rotation: new Animation(animID, "rotationQuaternion", 8, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
-                };
+                    position: new Animation(animID+"pos", "position", 8, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, false),
+                    rotation: new Animation(animID+"rot", "rotationQuaternion", 8, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
+                }
                 const posKeys = []
                 const rotKeys = []
-                let rq = Quaternion.RotationYawPitchRoll(mesh.rotation.y, mesh.rotation.x, mesh.rotation.z); // FIXME: Rotations assume cubes are normal to location
                 for (let frame = 0; frame <= 0.5/ROTSTEP; frame+=8) {
                     const angle = (isClockwise ? 1 : -1) * frame * ROTSTEP * Math.PI;
-                    const p = new Quaternion(mesh.position.x - pivot.x, mesh.position.y - pivot.y, mesh.position.z - pivot.z, 0);
                     const q = Quaternion.RotationAxis(axis, angle);	
-                    const _pdash = q.multiply(p).multiply(q.invert());
-                    posKeys.push({frame, value: new Vector3(pivot.x + _pdash.x, pivot.y + _pdash.y, pivot.z + _pdash.z)})
-                    rotKeys.push({frame, value: rq.multiply(q)})
+                    posKeys.push({frame, value: mesh.position
+                        .subtract(pivot)
+                        .applyRotationQuaternion(q)
+                        .add(pivot)
+                    })
+                    rotKeys.push({frame, value: q})
                 }
                 this.animCache[animID].position.setKeys(posKeys)
                 this.animCache[animID].rotation.setKeys(rotKeys)
@@ -144,7 +146,6 @@ class App {
             animGroup.addTargetedAnimation(this.animCache[animID].position, mesh)
             animGroup.addTargetedAnimation(this.animCache[animID].rotation, mesh)
         }
-        // animGroup = AnimationGroup.MakeAnimationAdditive(animGroup)
         animGroup.play()
         return new Promise<AnimationGroup>((resolve, _) => animGroup.onAnimationGroupEndObservable.add((animGroup, _) => resolve(animGroup))).then((animGroup) => {
             for (const tAnim of animGroup.children) {
