@@ -93,7 +93,6 @@ class App {
             box.rotationQuaternion = Quaternion.Identity()
         }
 
-        // hide/show the Inspector
         window.addEventListener("keydown", ev => {
             if (ev.shiftKey && ev.ctrlKey && ev.altKey && ev.key.toLowerCase() === 'i') { // Shift+Ctrl+Alt+I
                 if (scene.debugLayer.isVisible()) scene.debugLayer.hide()
@@ -103,10 +102,11 @@ class App {
         window.addEventListener("resize", () => engine.resize());
         engine.runRenderLoop(() => {if (scene?.activeCamera) scene.render()});
 
-        (async () => {
-            for (let i = 0; i < 100; i++) await this.performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
-            scene.freezeActiveMeshes()
-        })();
+        scene.freezeActiveMeshes()
+        // (async () => {
+        //     for (let i = 0; i < 100; i++) await this.performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
+        //     scene.freezeActiveMeshes()
+        // })();
     }
 
     private animCache: {[key: string]: {rotation: Animation, position: Animation}} = {}
