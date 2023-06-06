@@ -34,8 +34,8 @@ export function buildIntro(engine: Engine): Promise<Scene> {
     const pipeline = new DefaultRenderingPipeline("introPipeline", true, scene, [camera]);
     pipeline.depthOfFieldEnabled = true;
     pipeline.depthOfFieldBlurLevel = DepthOfFieldEffectBlurLevel.High;
-    pipeline.depthOfField.focusDistance = 20000
-    pipeline.depthOfField.focalLength = 120
+    pipeline.depthOfField.focusDistance = 15000
+    pipeline.depthOfField.focalLength = 150
     pipeline.bloomEnabled = true;
     pipeline.bloomThreshold = 1;
     pipeline.bloomWeight = 0.25;
@@ -92,7 +92,7 @@ export function buildIntro(engine: Engine): Promise<Scene> {
 
     scene.freezeActiveMeshes()
     return new Promise(async resolve => {
-        for (let i = 0; i < 5; i++) await performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
+        for (let i = 0; i < 15; i++) await performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
         const camtransition = new Animation("camtransition", "position", 10, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, true)
         camtransition.setKeys([
             {frame: 20, value: new Vector3(0, 0, 10)},
