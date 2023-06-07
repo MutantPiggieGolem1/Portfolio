@@ -18,9 +18,9 @@ class App {
 
     private async start(engine: Engine) {
         const introScene = await buildIntro(engine)
-        introScene.cameras[0].dispose()
-        engine.stopRenderLoop()
+        introScene.autoClear = false;
         const scene = buildScene(engine)
+        introScene.cameras[0].dispose()
     }
 }
 new App();

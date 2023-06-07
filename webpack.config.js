@@ -44,7 +44,11 @@ export default {
       publicPath: "/"
     },
     watchFiles: {
-      paths: ["/src/*.ts"]
+      paths: ["/src/*.ts"],
+      options: {
+        usePolling: false,
+        awaitWriteFinish: true
+      }
     }
   },
   plugins: [

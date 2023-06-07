@@ -1,4 +1,4 @@
-import { Animation, AnimationGroup, Color3, Engine, MeshBuilder, Scene, StandardMaterial, UniversalCamera, Vector3 } from "@babylonjs/core"
+import { Animation, AnimationGroup, Color3, Engine, MeshBuilder, Scene, SineEase, StandardMaterial, UniversalCamera, VRDeviceOrientationFreeCamera, Vector3 } from "@babylonjs/core"
 import { SkyMaterial } from "@babylonjs/materials"
 
 export function buildScene(engine: Engine) {
@@ -27,6 +27,9 @@ export function buildScene(engine: Engine) {
     skyboxMaterial.useSunPosition = false
     const sunAzi = new Animation("time", "azimuth", 1, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE, true)
     sunAzi.setKeys([{frame: 0, value: 0}, {frame: 60, value: 0.5}])
+    // const sunAziEase = new SineEase()
+    // sunAziEase.setEasingMode(SineEase.EASINGMODE_EASEINOUT)
+    // sunAzi.setEasingFunction(sunAziEase)
     const sunIncl = new Animation("time", "inclination", 1, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE, true)
     sunIncl.setKeys([{frame: 0, value: -0.5}, {frame: 60, value: 0.5}])
     const sunAnim = new AnimationGroup("sunAnim", scene)

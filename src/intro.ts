@@ -1,4 +1,4 @@
-import { ArcRotateCamera, Animation, Color3, CubeTexture, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, MeshBuilder, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess, AbstractMesh, AnimationGroup, Axis, Mesh, Engine, VRCameraMetrics, AnimationEvent, VertexBuffer } from "@babylonjs/core";
+import { ArcRotateCamera, Animation, Color3, CubeTexture, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, MeshBuilder, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess, AbstractMesh, AnimationGroup, Axis, Mesh, Engine, VRCameraMetrics, AnimationEvent, VertexBuffer, Space, FloatArray, Color4, BackEase } from "@babylonjs/core";
 import { isOnMobile } from "./app"
 
 const BLOCKDIST = 1.1;
@@ -92,7 +92,8 @@ export function buildIntro(engine: Engine): Promise<Scene> {
 
     scene.freezeActiveMeshes()
     return new Promise(async resolve => {
-        for (let i = 0; i < 15; i++) await performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
+        for (let i = 0; i < 4; i++) await performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
+        const transitiongroup = new AnimationGroup("transition", scene)
         const camtransition = new Animation("camtransition", "position", 10, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, true)
         camtransition.setKeys([
             {frame: 20, value: new Vector3(0, 0, 10)},
@@ -100,24 +101,29 @@ export function buildIntro(engine: Engine): Promise<Scene> {
             {frame: 80, value: new Vector3(0, 0, 0)}
         ])
         camtransition.addEvent(new AnimationEvent(0, () => camera.setTarget(new Vector3())))
-        const transitiongroup = new AnimationGroup("transition", scene)
+        camtransition.addEvent(new AnimationEvent(70,() => resolve(scene)))
+        camtransition.setEasingFunction(new BackEase())
         transitiongroup.addTargetedAnimation(camtransition, camera)
-        // TODO: Figure out how to set up inner face culling
         for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) for (let c = 0; c < 3; c++) {
             const mesh = scene.getMeshByName(`${a}${b}${c}`);
             if (!mesh) continue;
             const postransition = new Animation("postransition"+mesh.name, "position", 10, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, true)
-            postransition.setKeys([{frame: 30, value: mesh.position.scale(1/BLOCKDIST)}])
+            postransition.setKeys([{frame: 0, value: mesh.position}, {frame: 30, value: mesh.position.scale(1/BLOCKDIST)}])
+            postransition.addEvent(new AnimationEvent(30, () => {
+                const vertices = mesh.getVerticesData(VertexBuffer.ColorKind)!;
+                for (let i = 0; i < vertices.length; i+=4) if (vertices.slice(i, i+3).every(a => a === 0)) vertices[i+3] = 0;
+                console.log(vertices)
+                mesh.setVerticesData(VertexBuffer.ColorKind, vertices)
+            }))
             transitiongroup.addTargetedAnimation(postransition, mesh)
         }
         scene.stopAllAnimations()
         camera.useAutoRotationBehavior = false
         transitiongroup.start()
-        transitiongroup.onAnimationGroupEndObservable.add(() => resolve(scene))
     });
 }
 
-const animCache: {[key: string]: {rotation: Animation, position: Animation}} = {}
+const animCache: {[key: string]: Animation} = {}
 function performMove(move: keyof typeof moveMap, isClockwise: boolean, scene: Scene): Promise<void> {
     const meshes: AbstractMesh[] = []
     for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) {
@@ -127,37 +133,40 @@ function performMove(move: keyof typeof moveMap, isClockwise: boolean, scene: Sc
     const moveID = move+(isClockwise?"":"'")
     let animGroup = new AnimationGroup(moveID, scene)
     const pivotStr = moveMap[move].replaceAll("x", "1")
-    const pivot = new Vector3(parseInt(pivotStr[0])-1, parseInt(pivotStr[1])-1, parseInt(pivotStr[2])-1)
+    const pivot = new Vector3(parseInt(pivotStr[0])-1, parseInt(pivotStr[1])-1, parseInt(pivotStr[2])-1).scale(BLOCKDIST)
     const axis = (move === "L" || move === "R" ? Axis.X : (move === "U" || move === "D" ? Axis.Y : (Axis.Z))).normalize()
-    for (const mesh of meshes) { // FIXME: Animations snap to expected starting rotation
+    for (const mesh of meshes) {
         const animID: string = mesh.name+moveID;
         if (!(animID in animCache)) {
-            animCache[animID] = {
-                position: new Animation(animID+"pos", "position", 8, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, false),
-                rotation: new Animation(animID+"rot", "rotationQuaternion", 8, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
-            }
-            const posKeys = []
+            animCache[animID] = new Animation(animID+"rot", "rotationQuaternion", 8, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
             const rotKeys = []
             for (let frame = 0; frame <= 0.5/ROTSTEP; frame+=8) {
                 const angle = (isClockwise ? 1 : -1) * frame * ROTSTEP * Math.PI;
-                const q = Quaternion.RotationAxis(axis, angle);	
-                posKeys.push({frame, value: mesh.position
-                    .subtract(pivot)
-                    .applyRotationQuaternion(q)
-                    .add(pivot)
-                })
-                rotKeys.push({frame, value: q})
+                rotKeys.push({frame, value: Quaternion.RotationAxis(axis, angle)})
             }
-            animCache[animID].position.setKeys(posKeys)
-            animCache[animID].rotation.setKeys(rotKeys)
+            animCache[animID].setKeys(rotKeys)
         }
-        animGroup.addTargetedAnimation(animCache[animID].position, mesh)
-        animGroup.addTargetedAnimation(animCache[animID].rotation, mesh)
+        mesh.setPivotPoint(pivot, Space.WORLD);
+        animGroup.addTargetedAnimation(animCache[animID], mesh)
     }
     animGroup.play()
     return new Promise<AnimationGroup>((resolve, _) => animGroup.onAnimationGroupEndObservable.add((animGroup, _) => resolve(animGroup))).then((animGroup) => {
         for (const tAnim of animGroup.children) {
             const mesh: Mesh = tAnim.target;
+
+            const finalWorldPos = new Vector3();
+            mesh.getWorldMatrix().decompose(undefined, undefined, finalWorldPos);
+
+            // Bake the rotation
+            mesh.setPivotPoint(Vector3.Zero(), Space.LOCAL);
+            mesh.position.setAll(0);
+            mesh.bakeCurrentTransformIntoVertices()
+
+            // Reset the position
+            mesh.position.copyFrom(finalWorldPos);
+            mesh.computeWorldMatrix(true);
+
+            // Rename
             const scalePos = mesh.position.scale(1/BLOCKDIST);
             const roundPos = new Vector3(Math.round(scalePos.x), Math.round(scalePos.y), Math.round(scalePos.z))
             mesh.position = roundPos.scale(BLOCKDIST); // snap to grid
