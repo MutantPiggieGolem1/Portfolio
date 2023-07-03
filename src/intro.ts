@@ -1,9 +1,11 @@
-import { ArcRotateCamera, Animation, Color3, CubeTexture, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, MeshBuilder, PointLight, Quaternion, Scene, SineEase, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VolumetricLightScatteringPostProcess, AbstractMesh, AnimationGroup, Axis, Mesh, Engine, VRCameraMetrics, AnimationEvent, VertexBuffer, Space, FloatArray, Color4, BackEase } from "@babylonjs/core";
-import { isOnMobile } from "./app"
+import { AbstractMesh, Animation, AnimationEvent, AnimationGroup, ArcRotateCamera, Axis, BackEase, Color3, CubeTexture, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, PointLight, Quaternion, Scene, SineEase, Space, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VertexBuffer, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
+// import VerdanaBold from "./Verdana_Bold.json";
+import { isOnMobile } from "./app";
+// import earcut from "earcut"
 
 const BLOCKDIST = 1.1;
 const moveMap = {"L": "0xx", "R": "2xx", "U": "x2x", "D": "x0x", "F": "xx0", "B": "xx2"}
-const ROTSTEP = 1/32;
+const ROTSTEP = 1/48;
 
 export function buildIntro(engine: Engine): Promise<Scene> {
     const scene = new Scene(engine);
@@ -13,7 +15,6 @@ export function buildIntro(engine: Engine): Promise<Scene> {
     const camera = isOnMobile ?
         new VRDeviceOrientationArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene) :
         new ArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene);
-    // camera.attachControl(scene, true)
     scene._inputManager.detachControl()
     camera.useAutoRotationBehavior = true
     camera.autoRotationBehavior!.idleRotationSpeed = 1.1
@@ -71,18 +72,26 @@ export function buildIntro(engine: Engine): Promise<Scene> {
     godrays.decay = 0.97
     /* -- */
 
+    // const text = "compewper"
     const cubeMaterial = new StandardMaterial("cubemat", scene)
     cubeMaterial.emissiveColor = new Color3(0.2, 0.2, 0.2);
     for (let x = 0; x < 3; x++) for (let y = 0; y < 3; y++) for (let z = 0; z < 3; z++) {
-        const box = MeshBuilder.CreateBox(""+x+y+z, {updatable: false, faceColors: [
-            z === 2 ? new Color3(1, 0.5, 0) : Color3.Black(),
-            z === 0 ? Color3.White() : Color3.Black(),
+        let box = MeshBuilder.CreateBox(""+x+y+z, {updatable: false, faceColors: [
+            z === 2 ? Color3.Red() : Color3.Black(),
+            z === 0 ? new Color3(1, 0.5, 0) : Color3.Black(),
             x === 2 ? Color3.Green() : Color3.Black(),
             x === 0 ? Color3.Blue() : Color3.Black(),
-            y === 2 ? Color3.Red() : Color3.Black(),
+            y === 2 ? Color3.White() : Color3.Black(),
             y === 0 ? new Color3(1, 0.75, 0) : Color3.Black(),
-        ] as any[]}, scene).enableEdgesRendering()
+        ] as any[]}, scene)
         box.position = new Vector3(x-1, y-1, z-1).scale(BLOCKDIST)
+        // if (z === 2) {
+        //     const letter = MeshBuilder.CreateText("letter_"+x+","+y, text[(2-x)+(2-y)*3], VerdanaBold, {depth: 0.1, size: 0.9}, scene, earcut)!
+        //     letter.rotation = new Vector3(0, -Math.PI, 0)
+        //     letter.position = box.position.add(new Vector3(0, -0.2, 0.2))
+        //     box = Mesh.MergeMeshes([box, letter], true)!
+        // }
+        box.enableEdgesRendering()
         box.material = cubeMaterial
         box.rotationQuaternion = Quaternion.Identity()
         box.doNotSyncBoundingInfo = true
@@ -92,7 +101,7 @@ export function buildIntro(engine: Engine): Promise<Scene> {
 
     scene.freezeActiveMeshes()
     return new Promise(async resolve => {
-        for (let i = 0; i < 4; i++) await performMove(["L", "R", "U", "D", "F", "B"][Math.floor(6 * Math.random())] as any, Math.random() < 0.5, scene)
+        for (let m of "L'R'UDFBL'R'".matchAll(/(\w)('?)(?=\w|$)/gi)) await performMove(m[1] as any, m[2] === "'", scene)
         const transitiongroup = new AnimationGroup("transition", scene)
         const camtransition = new Animation("camtransition", "position", 10, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT, true)
         camtransition.setKeys([
@@ -112,7 +121,6 @@ export function buildIntro(engine: Engine): Promise<Scene> {
             postransition.addEvent(new AnimationEvent(30, () => {
                 const vertices = mesh.getVerticesData(VertexBuffer.ColorKind)!;
                 for (let i = 0; i < vertices.length; i+=4) if (vertices.slice(i, i+3).every(a => a === 0)) vertices[i+3] = 0;
-                console.log(vertices)
                 mesh.setVerticesData(VertexBuffer.ColorKind, vertices)
             }))
             transitiongroup.addTargetedAnimation(postransition, mesh)

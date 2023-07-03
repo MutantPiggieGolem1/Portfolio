@@ -1,10 +1,10 @@
-import { Animation, AnimationGroup, Color3, Engine, MeshBuilder, Scene, SineEase, StandardMaterial, UniversalCamera, VRDeviceOrientationFreeCamera, Vector3 } from "@babylonjs/core"
+import { Animation, AnimationGroup, Color3, Engine, Mesh, MeshBuilder, PhysicsAggregate, PhysicsShapeType, Scene, StandardMaterial, UniversalCamera, Vector3 } from "@babylonjs/core"
 import { SkyMaterial } from "@babylonjs/materials"
 
 export function buildScene(engine: Engine) {
     const scene = new Scene(engine)
-    scene.physicsEnabled = true
     scene.collisionsEnabled = true
+    // scene.enablePhysics()
 
     const camera = new UniversalCamera("camera", new Vector3(0, 2, 0), scene)
     camera.attachControl(engine.getRenderingCanvas(), true);
@@ -43,13 +43,17 @@ export function buildScene(engine: Engine) {
 
     const columnRadius = 24
     const columnHeight = 16
+    const columnCount = 8
+    const columnDiameter = 4
     const columnMat = new StandardMaterial("columnMat", scene)
     columnMat.diffuseColor = Color3.Gray()
-    for (let i = 0; i < 8; i++) {
-        const angle = (i/4) * Math.PI
-        const mesh = MeshBuilder.CreateCylinder("pillar", {diameter: 4, height: columnHeight}, scene);
+    for (let i = 0; i < columnCount; i++) {
+        const angle = (i/columnCount) * 2 * Math.PI
+        const mesh = MeshBuilder.CreateCylinder("pillar"+i, {diameter: columnDiameter, height: columnHeight}, scene);
         mesh.position = new Vector3(columnRadius*Math.cos(angle), columnHeight/2, columnRadius*Math.sin(angle))
+        mesh.material = columnMat
         mesh.checkCollisions = true
+        // const meshPhys = new PhysicsAggregate(mesh, PhysicsShapeType.SPHERE, { mass: 100, restitution: 0 }, scene);
     }
 
     engine.runRenderLoop(() => {if (scene?.activeCamera) scene.render()});

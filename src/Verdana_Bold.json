@@ -1,0 +1,75 @@
+{
+    "glyphs": {
+        "c": {
+            "ha": 817,
+            "x_min": 60,
+            "x_max": 771,
+            "o": "m 512 -20 q 330 3 412 -20 q 186 77 248 27 q 93 201 126 126 q 60 378 60 277 q 95 562 60 484 q 195 690 131 639 q 337 760 256 738 q 505 783 418 783 q 648 766 583 783 q 771 722 714 749 l 771 513 l 736 513 q 702 542 722 526 q 653 574 682 558 q 592 598 625 589 q 515 608 559 608 q 365 546 417 608 q 312 378 312 484 q 366 211 312 268 q 519 154 420 154 q 602 164 565 154 q 663 189 639 175 q 704 218 686 203 q 736 247 722 233 l 771 247 l 771 39 q 651 -4 713 12 q 512 -20 588 -20 z "
+        },
+        "e": {
+            "ha": 922,
+            "x_min": 60,
+            "x_max": 865,
+            "o": "m 865 336 l 307 336 q 375 199 312 246 q 559 151 437 151 q 709 179 637 151 q 824 239 782 207 l 851 239 l 851 43 q 695 -5 768 9 q 533 -20 622 -20 q 182 83 304 -20 q 60 376 60 186 q 175 675 60 565 q 492 785 291 785 q 772 691 678 785 q 865 421 865 597 l 865 336 m 623 479 q 585 594 621 555 q 473 633 549 633 q 357 596 402 633 q 306 479 311 559 l 623 479 z "
+        },
+        "m": {
+            "ha": 1470,
+            "x_min": 115,
+            "x_max": 1360,
+            "o": "m 860 540 l 860 0 l 614 0 l 614 380 q 612 475 614 436 q 597 538 609 514 q 560 574 585 563 q 490 585 535 585 q 420 571 454 585 q 359 540 387 556 l 359 0 l 115 0 l 115 762 l 359 762 l 359 677 q 480 755 422 727 q 608 783 538 783 q 741 749 683 783 q 831 650 798 715 q 973 747 904 712 q 1109 783 1042 783 q 1296 709 1232 783 q 1360 496 1360 635 l 1360 0 l 1115 0 l 1115 380 q 1113 475 1115 437 q 1098 538 1110 514 q 1061 574 1086 563 q 991 585 1036 585 q 931 575 960 585 q 860 540 902 564 z "
+        },
+        "o": {
+            "ha": 954,
+            "x_min": 60,
+            "x_max": 894,
+            "o": "m 894 380 q 784 84 894 193 q 477 -24 675 -24 q 169 84 279 -24 q 60 380 60 193 q 170 677 60 570 q 477 785 280 785 q 785 677 676 785 q 894 380 894 568 m 593 195 q 629 266 617 224 q 641 379 641 307 q 629 492 641 446 q 595 564 616 537 q 543 604 573 592 q 477 615 512 615 q 414 606 441 615 q 361 568 387 596 q 326 495 339 541 q 313 379 313 449 q 324 271 313 317 q 358 197 336 225 q 410 159 380 171 q 479 146 440 146 q 542 158 512 146 q 593 195 572 169 z "
+        },
+        "p": {
+            "ha": 971,
+            "x_min": 115,
+            "x_max": 910,
+            "o": "m 910 391 q 881 220 910 297 q 806 92 852 142 q 695 12 757 39 q 563 -15 633 -15 q 452 -1 498 -15 q 359 38 407 13 l 359 -279 l 115 -279 l 115 762 l 359 762 l 359 682 q 474 755 416 727 q 610 783 533 783 q 831 678 752 783 q 910 391 910 574 m 659 387 q 621 548 659 498 q 500 598 583 598 q 429 588 466 598 q 359 557 393 577 l 359 174 q 412 162 384 165 q 467 159 439 159 q 611 216 564 159 q 659 387 659 273 z "
+        },
+        "r": {
+            "ha": 690,
+            "x_min": 115,
+            "x_max": 667,
+            "o": "m 667 529 l 646 529 q 595 537 630 534 q 538 540 561 540 q 446 533 486 540 q 359 510 406 526 l 359 0 l 115 0 l 115 762 l 359 762 l 359 650 q 500 742 440 719 q 610 764 559 764 q 639 764 623 764 q 667 762 655 763 l 667 529 z "
+        },
+        "w": {
+            "ha": 1360,
+            "x_min": 31,
+            "x_max": 1330,
+            "o": "m 1330 762 l 1094 0 l 835 0 l 680 513 l 527 0 l 264 0 l 31 762 l 287 762 l 417 237 l 580 762 l 796 762 l 951 237 l 1079 762 l 1330 762 z "
+        }
+    },
+    "familyName": "Verdana",
+    "ascender": 1396,
+    "descender": -292,
+    "underlinePosition": -94,
+    "underlineThickness": 143,
+    "boundingBox": {
+        "yMin": -421,
+        "xMin": -764,
+        "yMax": 1489,
+        "xMax": 2371
+    },
+    "resolution": 1000,
+    "original_font_information": {
+        "format": 0,
+        "copyright": "© 2016 Microsoft Corporation. All Rights Reserved.",
+        "fontFamily": "Verdana",
+        "fontSubfamily": "Bold",
+        "uniqueID": "Microsoft:Verdana Bold",
+        "fullName": "Verdana Bold",
+        "version": "Version 5.33",
+        "postScriptName": "Verdana-Bold",
+        "trademark": "Verdana is a trademark of the Microsoft group of companies.",
+        "manufacturer": "Microsoft Corporation",
+        "designer": "Matthew Carter",
+        "licence": "Microsoft supplied font. You may use this font to create, display, and print content as permitted by the license terms or terms of use, of the Microsoft product, service, or content in which this font was included. You may only (i) embed this font in content as permitted by the embedding restrictions included in this font; and (ii) temporarily download this font to a printer or other output device to help print content. Any other use is prohibited.",
+        "licenceURL": "http://www.microsoft.com/typography/fonts/"
+    },
+    "cssFontWeight": "bold",
+    "cssFontStyle": "normal"
+}
