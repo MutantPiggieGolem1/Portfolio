@@ -1,10 +1,7 @@
-import { AbstractMesh, Animation, AnimationEvent, AnimationGroup, ArcRotateCamera, Axis, BackEase, Color3, CubeTexture, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, PointLight, Quaternion, Scene, SineEase, Space, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VertexBuffer, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
-// import VerdanaBold from "./Verdana_Bold.json";
-// import earcut from "earcut"
+import { AbstractMesh, Animation, AnimationEvent, AnimationGroup, ArcRotateCamera, Axis, BackEase, Color3, CubeTexture, CubicEase, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, PointLight, Quaternion, Scene, SineEase, Space, StandardMaterial, Texture, Vector3, VertexBuffer, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
 
 const BLOCKDIST = 1.1;
 const moveMap = {"L": "0xx", "R": "2xx", "U": "x2x", "D": "x0x", "F": "xx0", "B": "xx2"}
-const ROTSTEP = 1/48;
 
 export function buildIntro(engine: Engine): Promise<Scene> {
     const scene = new Scene(engine);
@@ -72,7 +69,6 @@ export function buildIntro(engine: Engine): Promise<Scene> {
     godrays.decay = 0.97
     /* -- */
 
-    // const text = "compewper"
     const cubeMaterial = new StandardMaterial("cubemat", scene)
     cubeMaterial.emissiveColor = new Color3(0.2, 0.2, 0.2);
     for (let x = 0; x < 3; x++) for (let y = 0; y < 3; y++) for (let z = 0; z < 3; z++) {
@@ -85,12 +81,6 @@ export function buildIntro(engine: Engine): Promise<Scene> {
             y === 0 ? new Color3(1, 0.75, 0) : Color3.Black(),
         ] as any[]}, scene)
         box.position = new Vector3(x-1, y-1, z-1).scale(BLOCKDIST)
-        // if (z === 2) {
-        //     const letter = MeshBuilder.CreateText("letter_"+x+","+y, text[(2-x)+(2-y)*3], VerdanaBold, {depth: 0.1, size: 0.9}, scene, earcut)!
-        //     letter.rotation = new Vector3(0, -Math.PI, 0)
-        //     letter.position = box.position.add(new Vector3(0, -0.2, 0.2))
-        //     box = Mesh.MergeMeshes([box, letter], true)!
-        // }
         box.enableEdgesRendering()
         box.material = cubeMaterial
         box.rotationQuaternion = Quaternion.Identity()
@@ -146,13 +136,12 @@ function performMove(move: keyof typeof moveMap, isClockwise: boolean, scene: Sc
     for (const mesh of meshes) {
         const animID: string = mesh.name+moveID;
         if (!(animID in animCache)) {
-            animCache[animID] = new Animation(animID+"rot", "rotationQuaternion", 8, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
-            const rotKeys = []
-            for (let frame = 0; frame <= 0.5/ROTSTEP; frame+=8) {
-                const angle = (isClockwise ? 1 : -1) * frame * ROTSTEP * Math.PI;
-                rotKeys.push({frame, value: Quaternion.RotationAxis(axis, angle)})
-            }
-            animCache[animID].setKeys(rotKeys)
+            animCache[animID] = new Animation(animID+"rot", "rotationQuaternion", 2, Animation.ANIMATIONTYPE_QUATERNION, Animation.ANIMATIONLOOPMODE_CONSTANT, false)
+            animCache[animID].setKeys([
+                {frame: 0, value: Quaternion.RotationAxis(axis, 0)},
+                {frame: 4, value: Quaternion.RotationAxis(axis, (isClockwise ? 0.5 : -0.5) * Math.PI)}
+            ])
+            animCache[animID].setEasingFunction(new CubicEase())
         }
         mesh.setPivotPoint(pivot, Space.WORLD);
         animGroup.addTargetedAnimation(animCache[animID], mesh)
