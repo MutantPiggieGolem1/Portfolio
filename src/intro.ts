@@ -1,6 +1,5 @@
 import { AbstractMesh, Animation, AnimationEvent, AnimationGroup, ArcRotateCamera, Axis, BackEase, Color3, CubeTexture, DefaultRenderingPipeline, DepthOfFieldEffectBlurLevel, Engine, Mesh, MeshBuilder, PointLight, Quaternion, Scene, SineEase, Space, StandardMaterial, Texture, VRDeviceOrientationArcRotateCamera, Vector3, VertexBuffer, VolumetricLightScatteringPostProcess } from "@babylonjs/core";
 // import VerdanaBold from "./Verdana_Bold.json";
-import { isOnMobile } from "./app";
 // import earcut from "earcut"
 
 const BLOCKDIST = 1.1;
@@ -12,12 +11,13 @@ export function buildIntro(engine: Engine): Promise<Scene> {
     scene.disablePhysicsEngine()
 
     /* Camera Config */
-    const camera = isOnMobile ?
-        new VRDeviceOrientationArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene) :
-        new ArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene);
-    scene._inputManager.detachControl()
+    const camera = new ArcRotateCamera("introcam", Math.PI*3/2, Math.PI*2/3, 10, Vector3.Zero(), scene);
+    camera.inputs.clear()
+    camera.inputs.addVRDeviceOrientation()
     camera.useAutoRotationBehavior = true
     camera.autoRotationBehavior!.idleRotationSpeed = 1.1
+    camera.autoRotationBehavior!.idleRotationWaitTime = 250
+    camera.autoRotationBehavior!.idleRotationSpinupTime = 1000
     const camBetaAnim = new Animation("introcambeta", "beta", 5, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE, true)
     const betaAnimEasing = new SineEase();
     betaAnimEasing.setEasingMode(SineEase.EASINGMODE_EASEINOUT)

@@ -19,7 +19,7 @@ export default {
         exclude: /node_modules/
       },
       {
-        test: /\.png/,
+        test: /\.(png|gltf)/,
         type: 'asset/resource'
       }
     ]
