@@ -20,7 +20,6 @@
   "homepage": "https://github.com/MutantPiggieGolem1/Portfolio#readme",
   "dependencies": {
     "@babylonjs/core": "^6.5.0",
-    "@babylonjs/havok": "^1.1.0",
     "@babylonjs/materials": "^6.11.2",
     "@babylonjs/procedural-textures": "^6.11.2"
   },
