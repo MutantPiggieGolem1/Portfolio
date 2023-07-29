@@ -1,25 +1,44 @@
-import { Animation, AnimationGroup, Engine, MeshBuilder, Scene, SceneLoader, SineEase, UniversalCamera, Vector3 } from "@babylonjs/core";
+import { DefaultRenderingPipeline, DirectionalLight, Engine, MeshBuilder, SSRRenderingPipeline, Scene, SceneLoader, UniversalCamera } from "@babylonjs/core";
 import { SkyMaterial } from "@babylonjs/materials";
 import { Inspector } from '@babylonjs/inspector';
 
-export function buildScene(engine: Engine) {
+export async function buildScene(engine: Engine) {
     const scene = new Scene(engine)
-    scene.disablePhysicsEngine()
-    scene.gravity = new Vector3(0, 9.8/60, 0);
-    scene.collisionsEnabled = true
-    Inspector.Show(scene, {"enableClose": true})
+    await SceneLoader.AppendAsync("", "bioworld.babylon", scene)
+    Inspector.Show(scene, {})
+    const camera = setupCamera(scene);
 
-    SceneLoader.AppendAsync("", "bioworld.babylon", scene).then(() => {
-        const dome = scene.getMeshByName("Dome")!
-        dome.checkCollisions = true
+    const pipeline = new DefaultRenderingPipeline("pipeline", true, scene, [camera]);
+    pipeline.samples = 4
+    pipeline.bloomEnabled = true
+    pipeline.depthOfFieldEnabled = true
+    pipeline.depthOfField.focalLength = 40*1000
+    pipeline.depthOfField.focusDistance = 10*1000
+    pipeline.depthOfField.fStop = 5
 
-        const pillars = scene.getMeshByName("Pillars")!
-        pillars.checkCollisions = true
-    })
+    // const ssr = new SSRRenderingPipeline("ssr", scene, [camera], false);
+    // ssr.
 
-    const camera = new UniversalCamera("camera", new Vector3(0, 5, 0), scene)
-    camera.attachControl(engine.getRenderingCanvas(), true);
-    camera.inputs.addMouse(true)
+    const sun = scene.getNodeByName("Sun") as DirectionalLight
+
+    const skybox = MeshBuilder.CreateBox("skyBox", { size: 300.0, updatable: false }, scene);
+    skybox.disableEdgesRendering()
+    const skyboxMaterial = new SkyMaterial("sky", scene);
+    skyboxMaterial.disableDepthWrite = true;
+    skyboxMaterial.backFaceCulling = false;
+    skyboxMaterial.luminance = 0.9
+    skyboxMaterial.rayleigh = 3
+    skyboxMaterial.turbidity = 3
+    skyboxMaterial.useSunPosition = true
+    skyboxMaterial.sunPosition = sun.direction.scale(-100)
+    skybox.material = skyboxMaterial;
+
+    engine.runRenderLoop(() => scene.render());
+}
+
+function setupCamera(scene: Scene) {
+    const camera = scene.getNodeByName("Camera") as UniversalCamera;
+    camera.attachControl(null, true);
     camera.inputs.addDeviceOrientation()
     camera.keysUpward  = [32]; // Space
     camera.keysDownward= [16]; // Shift
@@ -29,11 +48,10 @@ export function buildScene(engine: Engine) {
     camera.keysRight   = [68]; // D
     camera.speed = 0.5
 
-    //Mouse Pointer Lock
     let isLocked = false;
     scene.onPointerDown = () => {
         if (isLocked) return
-        let canvas = engine.getRenderingCanvas()!;
+        const canvas = scene.getEngine().getRenderingCanvas()!;
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
         if (canvas.requestPointerLock) canvas.requestPointerLock();
     }
@@ -45,36 +63,5 @@ export function buildScene(engine: Engine) {
     document.addEventListener("mspointerlockchange", onPointerLockChange, false);
     document.addEventListener("mozpointerlockchange", onPointerLockChange, false);
     document.addEventListener("webkitpointerlockchange", onPointerLockChange, false);
-
-    camera.ellipsoid = new Vector3(0.7, 2, 0.7);
-    camera.checkCollisions = true
-    camera.applyGravity = true
-    camera.needMoveForGravity = true
-
-    const skybox = MeshBuilder.CreateBox("skyBox", { size: 1000.0, updatable: false }, scene);
-    skybox.disableEdgesRendering()
-    const skyboxMaterial = new SkyMaterial("sky", scene);
-    skyboxMaterial.disableDepthWrite = true;
-    skyboxMaterial.backFaceCulling = false;
-    skyboxMaterial.luminance = 0.9
-    skyboxMaterial.rayleigh = 3
-    skyboxMaterial.turbidity = 3
-    skyboxMaterial.useSunPosition = false
-    const sunAzi = new Animation("timeazim", "azimuth", 1, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE, true)
-    sunAzi.setKeys([{frame: 0, value: 90/360}, {frame: 30, value: 180/360}, {frame: 60, value: 270/360}, {frame: 90, value: 1}])
-    const sunAziEase = new SineEase()
-    sunAziEase.setEasingMode(SineEase.EASINGMODE_EASEINOUT)
-    sunAzi.setEasingFunction(sunAziEase)
-    const sunIncl = new Animation("timeincl", "inclination", 1, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE, true)
-    sunIncl.setKeys([{frame: 0, value: 0}, {frame: 30, value: 0.5}, {frame: 60, value: 0}, {frame: 90, value: -0.5}])
-    const sunAnim = new AnimationGroup("sunAnim", scene)
-    sunAnim.addTargetedAnimation(sunAzi, skyboxMaterial)
-    sunAnim.addTargetedAnimation(sunIncl, skyboxMaterial)
-    sunAnim.start(true)
-    skybox.material = skyboxMaterial;
-
-    const ground = MeshBuilder.CreateGround("ground", {width: 1000, height: 1000}, scene)
-    ground.checkCollisions = true
-
-    engine.runRenderLoop(() => scene.render());
+    return camera;
 }
