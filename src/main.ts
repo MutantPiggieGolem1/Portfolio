@@ -1,20 +1,20 @@
-import { DefaultRenderingPipeline, DirectionalLight, Engine, MeshBuilder, SSRRenderingPipeline, Scene, SceneLoader, UniversalCamera } from "@babylonjs/core";
+import { Animation, AnimationGroup, DefaultRenderingPipeline, DirectionalLight, Engine, MeshBuilder, SSRRenderingPipeline, Scene, SceneLoader, UniversalCamera, Vector3 } from "@babylonjs/core";
 import { SkyMaterial } from "@babylonjs/materials";
-import { Inspector } from '@babylonjs/inspector';
+// import { Inspector } from '@babylonjs/inspector';
 
 export async function buildScene(engine: Engine) {
     const scene = new Scene(engine)
     await SceneLoader.AppendAsync("", "bioworld.babylon", scene)
-    Inspector.Show(scene, {})
+    // Inspector.Show(scene, {})
     const camera = setupCamera(scene);
 
     const pipeline = new DefaultRenderingPipeline("pipeline", true, scene, [camera]);
-    pipeline.samples = 4
+    pipeline.samples = 6
     pipeline.bloomEnabled = true
     pipeline.depthOfFieldEnabled = true
-    pipeline.depthOfField.focalLength = 40*1000
-    pipeline.depthOfField.focusDistance = 10*1000
-    pipeline.depthOfField.fStop = 5
+    pipeline.depthOfField.focalLength = 30*1000
+    pipeline.depthOfField.focusDistance = 12*1000
+    pipeline.depthOfField.fStop = 10
 
     // const ssr = new SSRRenderingPipeline("ssr", scene, [camera], false);
     // ssr.
@@ -23,14 +23,22 @@ export async function buildScene(engine: Engine) {
 
     const skybox = MeshBuilder.CreateBox("skyBox", { size: 300.0, updatable: false }, scene);
     skybox.disableEdgesRendering()
+    skybox.isPickable = false
+    skybox.infiniteDistance = true
     const skyboxMaterial = new SkyMaterial("sky", scene);
     skyboxMaterial.disableDepthWrite = true;
     skyboxMaterial.backFaceCulling = false;
     skyboxMaterial.luminance = 0.9
     skyboxMaterial.rayleigh = 3
     skyboxMaterial.turbidity = 3
-    skyboxMaterial.useSunPosition = true
-    skyboxMaterial.sunPosition = sun.direction.scale(-100)
+    skyboxMaterial.azimuth = 0.7
+    skyboxMaterial.useSunPosition = false
+    const skyAnim = new AnimationGroup("skyAni", scene);
+    const inclAnim = new Animation("skyIncl", "inclination", 2, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE);
+    inclAnim.setKeys([{frame: 0, value: -0.5}, {frame: 60, value: 0.5}, {frame: 120, value: 1.5}]);
+    skyAnim.addTargetedAnimation(inclAnim, skyboxMaterial);
+    skyAnim.start(true);
+    scene.registerBeforeRender(() => sun.direction = skyboxMaterial.sunPosition.scale(-1))
     skybox.material = skyboxMaterial;
 
     engine.runRenderLoop(() => scene.render());
@@ -39,7 +47,6 @@ export async function buildScene(engine: Engine) {
 function setupCamera(scene: Scene) {
     const camera = scene.getNodeByName("Camera") as UniversalCamera;
     camera.attachControl(null, true);
-    camera.inputs.addDeviceOrientation()
     camera.keysUpward  = [32]; // Space
     camera.keysDownward= [16]; // Shift
     camera.keysUp      = [87]; // W
