@@ -57,7 +57,9 @@ export default {
     }),
     new CopyPlugin({
       patterns: [
-        { from: "public/textures", to: "textures" }
+        { from: "public/textures", to: "textures" },
+        { from: "public/bioworld.babylon", to: ""},
+        { from: "public/bioworld.babylon.manifest", to: ""}
       ],
     }),
   ],
