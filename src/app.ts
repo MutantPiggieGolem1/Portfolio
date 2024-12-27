@@ -5,8 +5,8 @@ import { buildScene } from "./main";
 class App {
     constructor() {
         Database.IDBStorageEnabled = true;
-        const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
-        if (!canvas) throw "No canvas found."
+        const canvas = document.getElementById("renderCanvas");
+        if (!canvas || !(canvas instanceof HTMLCanvasElement)) throw "No canvas found."
 
         const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false, xrCompatible: true });
         window.addEventListener("resize", () => engine.resize());
